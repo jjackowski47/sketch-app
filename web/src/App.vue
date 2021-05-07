@@ -7,12 +7,25 @@
 </template>
 
 <style lang="scss">
+* {
+  margin: 0;
+  box-sizing: border-box;
+}
+
+html, body {
+  height: 100%;
+}
+
 #app {
   font-family: Avenir, Helvetica, Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-align: center;
-  color: #2c3e50;
+  color: #05386B;
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+  background-color: #5CDB95;
 }
 
 #nav {
@@ -20,10 +33,12 @@
 
   a {
     font-weight: bold;
-    color: #2c3e50;
+    font-size: 24px;
+    color: #05386B;
+    text-decoration: none;
 
     &.router-link-exact-active {
-      color: #42b983;
+      color: #EDF5E1;
     }
   }
 }

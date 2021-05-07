@@ -6,3 +6,9 @@
     </h1>
   </div>
 </template>
+
+<style scoped>
+  h1 {
+    padding: 0 10%;
+  }
+</style>
