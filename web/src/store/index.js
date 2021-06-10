@@ -5,6 +5,7 @@ export default createStore({
     return {
       pen_color: '#000000',
       size: 1,
+      canvas_nodes: [],
     };
   },
   mutations: {
@@ -13,6 +14,12 @@ export default createStore({
     },
     updateSize(state, value) {
       state.size = value;
+    },
+    addCanvasNode(state, node) {
+      state.canvas_nodes.push(node);
+    },
+    emptyCanvasNodes(state) {
+      state.canvas_nodes.length = 0;
     },
   },
   actions: {},
