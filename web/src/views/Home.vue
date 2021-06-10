@@ -1,5 +1,6 @@
 <template>
   <div class="home">
+    <h1>Draw quick sketch note, then press Play to see animation!</h1>
     <Canvas />
     <ToolBox />
   </div>
