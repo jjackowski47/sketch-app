@@ -1,8 +1,15 @@
 <template>
   <div class="home">
-    <h1>Draw quick sketch note, then press Play to see animation!</h1>
-    <Canvas />
-    <ToolBox />
+    <v-container fluid>
+      <v-row align-center align-content-center justify-center>
+        <v-col class="col-lg-2 col-md-12">
+          <ToolBox />
+        </v-col>
+        <v-col class="col-lg-10 col-md-12">
+          <Canvas />
+        </v-col>
+      </v-row>
+    </v-container>
   </div>
 </template>
 
@@ -12,6 +19,7 @@ import ToolBox from '../components/ToolBox.vue';
 
 export default {
   name: 'Home',
+
   components: {
     Canvas,
     ToolBox,
@@ -20,9 +28,9 @@ export default {
 </script>
 
 <style scoped>
-  .home {
-    flex-grow: 1;
-    display: flex;
-    flex-direction: column;
-  }
+.home {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+}
 </style>

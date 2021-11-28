@@ -1,25 +1,26 @@
-import { createStore } from 'vuex';
+import Vue from "vue";
+import Vuex from "vuex";
 
-export default createStore({
-  state() {
-    return {
-      pen_color: '#000000',
-      size: 1,
-      canvas_nodes: [],
-    };
+Vue.use(Vuex);
+
+export default new Vuex.Store({
+  state: {
+    penColor: "#000000",
+    size: 1,
+    canvasNodes: [],
   },
   mutations: {
     updateColor(state, value) {
-      state.pen_color = value;
+      state.penColor = value;
     },
     updateSize(state, value) {
       state.size = value;
     },
     addCanvasNode(state, node) {
-      state.canvas_nodes.push(node);
+      state.canvasNodes.push(node);
     },
     emptyCanvasNodes(state) {
-      state.canvas_nodes.length = 0;
+      state.canvasNodes.length = 0;
     },
   },
   actions: {},

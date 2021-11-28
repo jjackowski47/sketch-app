@@ -1,16 +1,17 @@
 <template>
-  <div class='toolbox'>
-    <div class='toolbox-item'>
-        <label for="pen_color">Color</label>
-        <input type="color" name="pen_color" id="pen_color" v-model="color">
-    </div>
-    <div class='toolbox-item'>
-        <label for="size">Size</label>
-        <input type="range" id="size" name="size"
-                min="1" max="10" v-model="size" step="1">
-        {{size}}
-    </div>
-  </div>
+  <v-container>
+    <v-col>
+      <v-row>
+        <label for="penColor" style="color: rgba(0, 0, 0, 0.6)">Color</label>
+        <input type="color" name="penColor" id="penColor" v-model="color"
+      /></v-row>
+      <v-row style="max-width: 400px">
+        <v-slider v-model="size" step="1" :min="1" :max="10" label="Size" ticks hide-details>
+          <template v-slot:append>{{ size }}</template>
+        </v-slider></v-row
+      >
+    </v-col>
+  </v-container>
 </template>
 
 <script>
@@ -18,7 +19,7 @@ export default {
   computed: {
     color: {
       get() {
-        return this.$store.state.pen_color;
+        return this.$store.state.penColor;
       },
       set(value) {
         this.$store.commit('updateColor', value);
@@ -33,23 +34,11 @@ export default {
       },
     },
   },
-
 };
 </script>
 
-<style lang='scss' scoped>
-.toolbox {
-  display: flex;
-  justify-content: center;
-
-  .toolbox-item {
-    padding: 1em;
-    label {
-      font-family: Avenir, Helvetica, Arial, sans-serif;
-      font-weight: 600;
-      padding: 1em;
-    }
-  }
+<style lang="scss" scoped>
+#penColor {
+  margin-left: 10px;
 }
-
 </style>
