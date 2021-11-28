@@ -4,6 +4,11 @@ Aplikacja służy do tworzenia notatek graficznych oraz umożliwia udostępniani
 
 ### Docker
 
+First copy and fill .env file
+```
+cp .env.sample .env
+```
+
 To run web application and api use docker-compose file
 
 ```
