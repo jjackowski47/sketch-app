@@ -4,8 +4,11 @@
       <canvas class="sketch-canvas" id="canvas"></canvas>
     </div>
     <v-item-group>
-      <v-btn @click="playAnimation" large class="green white--text mr-4">Play</v-btn>
-      <v-btn @click="clearCanvas" large class="green white--text">Clear</v-btn>
+      <v-btn @click="playAnimation" large class="green white--text">Play</v-btn>
+      <v-btn @click="clearCanvas" large class="green white--text mx-4">Clear</v-btn>
+      <v-btn @click="download" large class="green white--text" :disabled="!animationCaptured"
+        >Download</v-btn
+      >
     </v-item-group>
   </div>
 </template>
@@ -19,6 +22,10 @@ export default {
       canvas: null,
       points: [],
       dragging: false,
+      recordedBlobs: null,
+      mediaRecorder: null,
+      stream: null,
+      animationCaptured: false,
     };
   },
   methods: {
@@ -92,6 +99,9 @@ export default {
     animate() {
       if (this.t < this.points.length - 1) {
         requestAnimationFrame(this.animate);
+      } else {
+        this.stopRecording();
+        this.animationCaptured = true;
       }
       if (this.points.length > 0) {
         this.context.lineWidth = 2 * this.points[this.t].lineWidth;
@@ -124,12 +134,74 @@ export default {
       }
     },
     playAnimation() {
+      this.startRecording();
       this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
       this.t = 1;
       this.points = [...this.$store.state.canvasNodes];
       this.animate();
       this.$store.commit('emptyCanvasNodes');
     },
+    startRecording() {
+      let options = { mimeType: 'video/webm' };
+      this.recordedBlobs = [];
+      this.animationCaptured = false;
+      try {
+        this.mediaRecorder = new MediaRecorder(this.stream, options);
+      } catch (e0) {
+        console.log('Unable to create MediaRecorder with options Object: ', e0);
+        try {
+          options = { mimeType: 'video/webm,codecs=vp9' };
+          this.mediaRecorder = new MediaRecorder(this.stream, options);
+        } catch (e1) {
+          console.log('Unable to create MediaRecorder with options Object: ', e1);
+          try {
+            options = 'video/vp8';
+            this.mediaRecorder = new MediaRecorder(this.stream, options);
+          } catch (e2) {
+            alert(
+              'MediaRecorder is not supported by this browser.\n\n' +
+                'Try Firefox 29 or later, or Chrome 47 or later, ' +
+                'with Enable experimental Web Platform features enabled from chrome://flags.'
+            );
+            console.error('Exception while creating MediaRecorder:', e2);
+            return;
+          }
+        }
+      }
+      console.log('Created MediaRecorder', this.mediaRecorder, 'with options', options);
+      this.mediaRecorder.onstop = this.handleStop;
+      this.mediaRecorder.ondataavailable = this.handleDataAvailable;
+      this.mediaRecorder.start(50);
+      console.log('MediaRecorder started', this.mediaRecorder);
+    },
+    stopRecording() {
+      this.mediaRecorder.stop();
+      console.log('Recorded Blobs: ', this.recordedBlobs);
+    },
+
+    handleDataAvailable(event) {
+      if (event.data && event.data.size > 0) {
+        this.recordedBlobs.push(event.data);
+      }
+    },
+    handleStop(event) {
+      console.log('Recorder stopped: ', event);
+    },
+    download() {
+      const superBuffer = new Blob(this.recordedBlobs, { type: 'video/webm' });
+      const url = window.URL.createObjectURL(superBuffer);
+      const a = document.createElement('a');
+      a.style.display = 'none';
+      a.href = url;
+      a.download = 'test.webm';
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(() => {
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+      }, 100);
+    },
+
     clearCanvas() {
       this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
       this.$store.commit('addCanvasNode', {
@@ -150,6 +222,7 @@ export default {
     this.canvas.addEventListener('mouseup', this.disengage);
 
     this.context = this.canvas.getContext('2d');
+    this.stream = this.canvas.captureStream(60);
 
     this.initAnimationFrame();
   },
