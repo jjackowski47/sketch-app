@@ -33,7 +33,11 @@ def create_app(config=None):
         app.config.update(config)
 
     db.init_app(app)
-    CORS(app, resources={r"/*": {"origins": "*"}})
+    CORS(
+        app,
+        resources={r"/*": {"origins": "http://localhost:8080"}},
+        support_credentials=True,
+    )
 
     app.register_blueprint(auth)
     with app.app_context():
