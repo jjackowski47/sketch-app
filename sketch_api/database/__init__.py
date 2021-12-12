@@ -1,10 +1,12 @@
-from sketch_api.database.models import db, User
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker, Session
 import os
 from contextlib import contextmanager
 
-engine = create_engine(os.getenv("DATABASE_URL"))
+from sqlalchemy import create_engine
+from sqlalchemy.orm import Session, sessionmaker
+
+from sketch_api.database.models import User, db
+
+engine = create_engine(os.getenv("DATABASE_URL"), pool_pre_ping=True)
 Session = sessionmaker(bind=engine)
 
 

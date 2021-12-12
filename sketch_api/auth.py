@@ -1,11 +1,15 @@
 import re
+from datetime import datetime, timedelta
 from typing import List
-from flask import Blueprint, jsonify, current_app, Response
-from flask.globals import request
-from pydantic.networks import EmailStr
-from sketch_api.database import User, session_manager
 
+import jwt
+from flask import Blueprint, Response, current_app, jsonify
+from flask.globals import request
+from flask_cors import cross_origin
 from pydantic import BaseModel, ValidationError, validator
+from pydantic.networks import EmailStr
+
+from sketch_api.database import User, session_manager
 
 
 class CreateUserRequest(BaseModel):
