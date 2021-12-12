@@ -12,20 +12,21 @@
         </v-list-item-group>
       </v-list>
     </v-navigation-drawer>
-    <v-app-bar app dense dark>
+    <v-app-bar app dark>
       <v-app-bar-nav-icon @click="drawer = !drawer" class="d-md-none"></v-app-bar-nav-icon>
-      <v-app-bar-title>DESCRIBBLE</v-app-bar-title>
+      <v-app-bar-title style="text-overflow: 'unset'">DESCRIBBLE</v-app-bar-title>
       <v-spacer></v-spacer>
       <v-item-group v-for="item in navItems" :key="item.id" class="d-none d-md-flex">
         <v-btn :to="item.path" tile active-class="green--text text--lighten-2">{{
           item.title
         }}</v-btn>
       </v-item-group>
+      <v-avatar v-if="isAuthenticated" size="30" color="green">
+        <span class="white--text text-h7">JJ</span>
+      </v-avatar>
     </v-app-bar>
     <v-main>
-      <!-- Provides the application the proper gutter -->
       <v-container fluid class="main-container">
-        <!-- If using vue-router -->
         <router-view></router-view>
       </v-container>
     </v-main>
@@ -38,27 +39,70 @@
 <script>
 export default {
   name: 'App',
-
+  computed: {
+    isAuthenticated() {
+      return this.$store.getters.isAuthenticated;
+    },
+    navItems() {
+      return !this.isAuthenticated
+        ? [
+            {
+              id: 1,
+              title: 'Home',
+              path: '/',
+              icon: 'mdi-home-outline',
+            },
+            {
+              id: 2,
+              title: 'About',
+              path: '/about',
+              icon: 'mdi-information-outline',
+            },
+            {
+              id: 3,
+              title: 'Sign Up',
+              path: '/signup',
+              icon: 'mdi-account-plus-outline',
+            },
+            {
+              id: 4,
+              title: 'Sign In',
+              path: '/signin',
+              icon: 'mdi-login',
+            },
+          ]
+        : [
+            {
+              id: 1,
+              title: 'Sketch',
+              path: '/',
+              icon: 'mdi-draw-pen',
+            },
+            {
+              id: 2,
+              title: 'Notes',
+              path: '/notes',
+              icon: 'mdi-file-multiple-outline',
+            },
+            {
+              id: 3,
+              title: 'About',
+              path: '/about',
+              icon: 'mdi-information-outline',
+            },
+            {
+              id: 4,
+              title: 'Sign out',
+              path: '/signout',
+              icon: 'mdi-logout',
+            },
+          ];
+    },
+  },
   data: () => ({
     userLogged: false,
     drawer: false,
     group: 1,
-    navItems: [
-      { id: 1, title: 'Home', path: '/', icon: 'mdi-home-outline' },
-      {
-        id: 2,
-        title: 'About',
-        path: '/about',
-        icon: 'mdi-information-outline',
-      },
-      {
-        id: 3,
-        title: 'Sign Up',
-        path: '/signup',
-        icon: 'mdi-account-plus-outline',
-      },
-      { id: 4, title: 'Sign In', path: '/signin', icon: 'mdi-login' },
-    ],
   }),
 };
 </script>
@@ -72,6 +116,10 @@ export default {
 html,
 body {
   height: 100%;
+}
+
+.v-app-bar-title__content {
+  text-overflow: unset !important;
 }
 
 .main-container {

@@ -1,6 +1,6 @@
 <template>
   <div class="signin-page">
-    <form @submit.prevent="login">
+    <form @submit.prevent="authenticate">
       <div class="form">
         <div class="title">Welcome</div>
         <div class="subtitle">Sign in to your account!</div>
@@ -14,7 +14,7 @@
           <div class="cut"></div>
           <label for="password" class="placeholder">password</label>
         </div>
-        <input class="submit" type="submit" value="Sign in" />
+        <input color="primary" class="submit" type="submit" value="Sign in" />
       </div>
     </form>
     <v-img
@@ -24,6 +24,13 @@
       alt="Teacher with a blackboard"
       class="d-none d-md-flex ml-12"
     ></v-img>
+    <v-snackbar v-model="snackbar" :color="color" timeout="3000" style="white-space: pre-line">
+      {{ text }}
+
+      <template v-slot:action="{ attrs }">
+        <v-btn :color="btnColor" text v-bind="attrs" @click="snackbar = false"> Close </v-btn>
+      </template>
+    </v-snackbar>
   </div>
 </template>
 
@@ -159,33 +166,43 @@ export default {
     return {
       email: '',
       password: '',
+      snackbar: false,
+      text: '',
+      color: 'white',
+      btnColor: 'white',
     };
   },
+  mounted() {
+    this.$on('failedRegistering', (msg) => {
+      this.errorMsg = msg;
+    });
+    this.$on('failedAuthentication', (msg) => {
+      this.errorMsg = msg;
+    });
+  },
+  beforeDestroy() {
+    this.$off('failedRegistering');
+    this.$off('failedAuthentication');
+  },
   methods: {
-    async login() {
-      const { email, password } = this;
-      fetch('http://localhost:5001/signin', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          email,
-          password,
-        }),
-      })
-        .then((response) => {
-          if (response.ok) {
-            this.email = '';
-            this.password = '';
-            return true;
-          } else {
-            return false;
-          }
+    authenticate() {
+      this.$store
+        .dispatch('login', { email: this.email, password: this.password })
+        .then(() => {
+          this.$router.push('/');
         })
-        .catch(() => {
-          return false;
+        .catch((error) => {
+          console.log(error.response.data[0].msg);
+          this.text = error.response.data.map((x) => x.loc[0] + ' ' + x.msg).join('\n');
+          this.color = 'error';
+          this.btnColor = 'red lighten-5';
+          this.snackbar = true;
         });
+    },
+    register() {
+      this.$store
+        .dispatch('register', { email: this.email, password: this.password })
+        .then(() => this.$router.push('/'));
     },
   },
 };

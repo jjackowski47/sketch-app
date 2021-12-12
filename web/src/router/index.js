@@ -22,6 +22,13 @@ const routes = [
     path: "/signup",
     name: "Signup",
     component: Signup,
+    beforeEnter(to, from, next) {
+      if (store.getters.isAuthenticated) {
+        next('/');
+      } else {
+        next();
+      }
+    },
   },
   {
     path: "/signin",
