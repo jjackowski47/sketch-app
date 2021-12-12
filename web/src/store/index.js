@@ -74,7 +74,6 @@ export default new Vuex.Store({
     },
   },
   getters: {
-  actions: {},
     isAuthenticated(state) {
       return isValidJwt(state.jwt);
     },
