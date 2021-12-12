@@ -4,142 +4,180 @@
       <canvas class="sketch-canvas" id="canvas"></canvas>
     </div>
     <v-item-group>
-      <v-btn @click="playAnimation" large class="green white--text">Play</v-btn>
-      <v-btn @click="clearCanvas" large class="green white--text mx-4">Clear</v-btn>
-      <v-btn @click="download" large class="green white--text" :disabled="!animationCaptured"
-        >Download</v-btn
+      <v-btn v-if="animationCaptured" @click="playAnimation" large class="green white--text mx-2"
+        >Play</v-btn
       >
+      <v-btn v-if="!animationCaptured" @click="saveAnimation" large class="green white--text mx-2"
+        >Save</v-btn
+      >
+      <v-btn v-if="!animationCaptured" @click="clearCanvas" large class="green white--text mx-2"
+        >Clear</v-btn
+      >
+      <v-menu bottom offset-y>
+        <template v-slot:activator="{ on, attrs }">
+          <v-btn
+            v-bind="attrs"
+            v-on="on"
+            large
+            class="green white--text mx-2"
+            :disabled="!animationCaptured"
+          >
+            Download
+          </v-btn>
+        </template>
+        <v-list>
+          <v-list-item v-for="(item, i) in items" :key="i" @click="item.handler">
+            <v-list-item-title>{{ item.title }}</v-list-item-title>
+          </v-list-item>
+        </v-list>
+      </v-menu>
+      <v-btn @click="reset" large class="green white--text mx-2">Reset</v-btn>
     </v-item-group>
+    <v-slider
+      v-if="animating || animationCaptured"
+      v-model="t"
+      :max="nodesLength - 1"
+      @input="updateCanvasState"
+      :readonly="!animationCaptured"
+    >
+      <template v-slot:append>{{ progress }}</template>
+    </v-slider>
   </div>
 </template>
 
 <script>
+import { putPointOnCanvas, fillCanvas, initAnimationFrame, downloadFile } from '../utils/index.js';
+
+const initialState = () => {
+  return {
+    t: 0,
+    context: null,
+    canvas: null,
+    points: [],
+    dragging: false,
+    recordedBlobs: [],
+    mediaRecorder: null,
+    stream: null,
+    animationCaptured: false,
+    animating: false,
+  };
+};
 export default {
   data() {
-    return {
-      t: 1,
-      context: null,
-      canvas: null,
-      points: [],
-      dragging: false,
-      recordedBlobs: null,
-      mediaRecorder: null,
-      stream: null,
-      animationCaptured: false,
-    };
+    return initialState();
+  },
+  computed: {
+    nodesLength() {
+      return this.$store.getters.nodesLength;
+    },
+    progress() {
+      return Math.floor((this.t / (this.points.length - 1)) * 100) + '%';
+    },
+    items() {
+      return [
+        {
+          title: 'MP4',
+          handler: this.downloadMP4,
+        },
+        {
+          title: 'webm',
+          handler: this.downloadWebm,
+        },
+        {
+          title: 'nodes JSON file',
+          handler: this.downloadNodes,
+        },
+      ];
+    },
   },
   methods: {
-    initAnimationFrame() {
-      let lastTime = 0;
-      const vendors = ['ms', 'moz', 'webkit', 'o'];
-      for (let x = 0; x < vendors.length && !window.requestAnimationFrame; x += 1) {
-        window.requestAnimationFrame = window[`${vendors[x]}RequestAnimationFrame`];
-        window.cancelAnimationFrame =
-          window[`${vendors[x]}CancelAnimationFrame`] ||
-          window[`${vendors[x]}CancelRequestAnimationFrame`];
-      }
-
-      if (!window.requestAnimationFrame) {
-        window.requestAnimationFrame = (callback) => {
-          const currTime = new Date().getTime();
-          const timeToCall = Math.max(0, 16 - (currTime - lastTime));
-          const id = window.setTimeout(() => {
-            callback(currTime + timeToCall);
-          }, timeToCall);
-          lastTime = currTime + timeToCall;
-          return id;
-        };
-      }
-
-      if (!window.cancelAnimationFrame) {
-        window.cancelAnimationFrame = (id) => {
-          clearTimeout(id);
-        };
+    putPoint(e) {
+      if (!this.animationCaptured && !this.animating) {
+        this.context.lineWidth = this.$store.state.size * 2;
+        if (this.dragging) {
+          putPointOnCanvas(
+            this.context,
+            e.offsetX,
+            e.offsetY,
+            this.$store.state.penColor,
+            this.$store.state.size
+          );
+          this.$store.commit('addCanvasNode', {
+            x: e.offsetX,
+            y: e.offsetY,
+            action: 'lineTo',
+            lineWidth: this.$store.state.size,
+            color: this.$store.state.penColor,
+          });
+        }
       }
     },
-    putPoint(e) {
-      this.context.lineWidth = this.$store.state.size * 2;
-      if (this.dragging) {
-        this.context.lineTo(e.offsetX, e.offsetY);
-        this.context.strokeStyle = this.$store.state.penColor;
-        this.context.stroke();
-        this.context.beginPath();
-        this.context.arc(e.offsetX, e.offsetY, this.$store.state.size, 0, Math.PI * 2);
-        this.context.fillStyle = this.$store.state.penColor;
-        this.context.fill();
+    engage(e) {
+      if (!this.animationCaptured && !this.animating) {
+        this.dragging = true;
         this.context.beginPath();
         this.context.moveTo(e.offsetX, e.offsetY);
         this.$store.commit('addCanvasNode', {
           x: e.offsetX,
           y: e.offsetY,
-          action: 'lineTo',
-          lineWidth: this.$store.state.size,
-          color: this.$store.state.penColor,
+          action: 'moveTo',
         });
+        this.putPoint(e);
       }
-    },
-    engage(e) {
-      if (this.$store.state.canvasNodes.length === 0) {
-        this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
-      }
-      this.dragging = true;
-      this.context.beginPath();
-      this.context.moveTo(e.offsetX, e.offsetY);
-      this.$store.commit('addCanvasNode', {
-        x: e.offsetX,
-        y: e.offsetY,
-        action: 'moveTo',
-      });
-      this.putPoint(e);
     },
     disengage() {
-      this.dragging = false;
-      this.context.beginPath();
+      if (!this.animationCaptured && !this.animating) {
+        this.dragging = false;
+        this.context.beginPath();
+      }
     },
     animate() {
       if (this.t < this.points.length - 1) {
+        this.animating = true;
         requestAnimationFrame(this.animate);
       } else {
-        this.stopRecording();
-        this.animationCaptured = true;
+        this.animating = false;
+        if (this.mediaRecorder.state == 'recording') {
+          this.stopRecording();
+          this.animationCaptured = true;
+        }
       }
       if (this.points.length > 0) {
-        this.context.lineWidth = 2 * this.points[this.t].lineWidth;
-        if (this.points[this.t].action === 'lineTo') {
-          this.context.lineTo(this.points[this.t].x, this.points[this.t].y);
-          this.context.strokeStyle = this.points[this.t].color;
-          this.context.stroke();
-
+        let node = this.points[this.t];
+        this.context.lineWidth = 2 * node.lineWidth;
+        if (node.action === 'lineTo') {
+          putPointOnCanvas(this.context, node.x, node.y, node.color, node.lineWidth);
+        } else if (node.action === 'moveTo') {
           this.context.beginPath();
-          this.context.arc(
-            this.points[this.t].x,
-            this.points[this.t].y,
-            this.points[this.t].lineWidth,
-            0,
-            Math.PI * 2
-          );
-          this.context.fillStyle = this.points[this.t].color;
-          this.context.fill();
-
-          this.context.beginPath();
-          this.context.moveTo(this.points[this.t].x, this.points[this.t].y);
-        } else if (this.points[this.t].action === 'moveTo') {
-          this.context.beginPath();
-          this.context.moveTo(this.points[this.t].x, this.points[this.t].y);
-        } else if (this.points[this.t].action === 'clearCanvas') {
-          this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
+          this.context.moveTo(node.x, node.y);
+        } else if (node.action === 'clearCanvas') {
+          fillCanvas(this.context, this.canvas.width, this.canvas.height, 'white');
         }
 
         this.t += 1;
       }
     },
-    playAnimation() {
+    saveAnimation() {
       this.startRecording();
-      this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
-      this.t = 1;
-      this.points = [...this.$store.state.canvasNodes];
-      this.animate();
+      this.playAnimation();
+    },
+    playAnimation() {
+      this.updateCanvasState();
+      if (!this.animating) {
+        this.animate();
+      }
+    },
+
+    reset() {
+      if (this.animating) {
+        this.stopRecording();
+      }
+      Object.assign(this.$data, initialState());
+      this.canvas = document.getElementById('canvas');
+      this.context = this.canvas.getContext('2d');
+      this.stream = this.canvas.captureStream(60);
       this.$store.commit('emptyCanvasNodes');
+      fillCanvas(this.context, this.canvas.width, this.canvas.height, 'white');
     },
     startRecording() {
       let options = { mimeType: 'video/webm' };
@@ -178,7 +216,6 @@ export default {
       this.mediaRecorder.stop();
       console.log('Recorded Blobs: ', this.recordedBlobs);
     },
-
     handleDataAvailable(event) {
       if (event.data && event.data.size > 0) {
         this.recordedBlobs.push(event.data);
@@ -187,23 +224,18 @@ export default {
     handleStop(event) {
       console.log('Recorder stopped: ', event);
     },
-    download() {
-      const superBuffer = new Blob(this.recordedBlobs, { type: 'video/webm' });
-      const url = window.URL.createObjectURL(superBuffer);
-      const a = document.createElement('a');
-      a.style.display = 'none';
-      a.href = url;
-      a.download = 'test.webm';
-      document.body.appendChild(a);
-      a.click();
-      setTimeout(() => {
-        document.body.removeChild(a);
-        window.URL.revokeObjectURL(url);
-      }, 100);
+    downloadMP4() {
+      downloadFile(this.recordedBlobs, 'test.mp4', 'video/mp4');
     },
-
+    downloadWebm() {
+      downloadFile(this.recordedBlobs, 'test.webm', 'video/webm');
+    },
+    downloadNodes() {
+      var data = [JSON.stringify(this.$store.state.canvasNodes)];
+      downloadFile(data, 'test.txt', 'text/plain'); // data to store
+    },
     clearCanvas() {
-      this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
+      fillCanvas(this.context, this.canvas.width, this.canvas.height, 'white');
       this.$store.commit('addCanvasNode', {
         x: 0,
         y: 0,
@@ -211,6 +243,27 @@ export default {
         lineWidth: this.$store.state.size,
         color: this.$store.state.penColor,
       });
+    },
+    updateCanvasState() {
+      fillCanvas(this.context, this.canvas.width, this.canvas.height, 'white');
+      this.points = [...this.$store.state.canvasNodes];
+      if (this.nodesLength > 0) {
+        this.context.moveTo(this.points[this.t].x, this.points[this.t].y);
+      }
+      if (this.points.length > 0) {
+        for (let i = 0; i < this.t; i++) {
+          let node = this.points[i];
+          this.context.lineWidth = 2 * node.lineWidth;
+          if (node.action === 'lineTo') {
+            putPointOnCanvas(this.context, node.x, node.y, node.color, node.lineWidth);
+          } else if (node.action === 'moveTo') {
+            this.context.beginPath();
+            this.context.moveTo(node.x, node.y);
+          } else if (node.action === 'clearCanvas') {
+            fillCanvas(this.context, this.canvas.width, this.canvas.height, 'white');
+          }
+        }
+      }
     },
   },
   mounted() {
@@ -224,7 +277,7 @@ export default {
     this.context = this.canvas.getContext('2d');
     this.stream = this.canvas.captureStream(60);
 
-    this.initAnimationFrame();
+    initAnimationFrame();
   },
 };
 </script>
