@@ -4,6 +4,7 @@ import Home from '../views/Home.vue';
 import About from '../views/About.vue';
 import Signup from '../views/Signup.vue';
 import Signin from '../views/Signin.vue';
+import Dashboard from '../views/Dashboard.vue';
 import store from '../store/index.js';
 
 Vue.use(VueRouter);
@@ -32,9 +33,38 @@ const routes = [
     },
   },
   {
+    path: '/notes',
+    name: 'Notes',
+    component: Dashboard,
+    beforeEnter(to, from, next) {
+      if (store.getters.isAuthenticated) {
+        next();
+      } else {
+        next('/');
+      }
+    },
+  },
+  {
     path: '/signin',
     name: 'Signin',
     component: Signin,
+    beforeEnter(to, from, next) {
+      if (store.getters.isAuthenticated) {
+        next('/');
+      } else {
+        next();
+      }
+    },
+  },
+  {
+    path: '/signout',
+    name: 'Signout',
+    beforeEnter(to, from, next) {
+      if (store.getters.isAuthenticated) {
+        store.commit('setJwtToken', { jwt: '' });
+      }
+      next('/');
+    },
   },
 ];
 

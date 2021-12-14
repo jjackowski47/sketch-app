@@ -192,8 +192,14 @@ export default {
           this.$router.push('/');
         })
         .catch((error) => {
-          console.log(error.response.data[0].msg);
-          this.text = error.response.data.map((x) => x.loc[0] + ' ' + x.msg).join('\n');
+          if (error.response.status === 400) {
+            console.log(error.response.data[0].msg);
+            this.text = error.response.data.map((x) => x.loc[0] + ' ' + x.msg).join('\n');
+          } else if (error.response.status === 401) {
+            this.text = error.response.data;
+          } else {
+            this.text = 'Unknown error';
+          }
           this.color = 'error';
           this.btnColor = 'red lighten-5';
           this.snackbar = true;
