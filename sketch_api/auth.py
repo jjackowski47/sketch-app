@@ -32,16 +32,9 @@ class SignInRequest(CreateUserRequest):
 auth = Blueprint("auth", __name__)
 
 
-@auth.route("/test")
-def index():
-    return jsonify(test_api_response="Flask api working correctly yup not!")
-
-
-@auth.route("/user", methods=["GET"])
-def get_users():
-    users: List[User] = User.query.all()
-    current_app.logger.info(users)
-    return jsonify([u.to_dict() for u in users])
+@auth.route("/hello")
+def health_check():
+    return "OK", 200
 
 
 @auth.route("/signin", methods=["POST"])

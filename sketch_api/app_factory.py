@@ -4,6 +4,7 @@ from flask import Flask
 from flask_cors import CORS
 
 from sketch_api.auth import auth
+from sketch_api.notes import notes
 from sketch_api.database import db
 
 dictConfig(
@@ -40,6 +41,7 @@ def create_app(config=None):
     )
 
     app.register_blueprint(auth)
+    app.register_blueprint(notes)
     with app.app_context():
         db.create_all()
 

@@ -1,21 +1,37 @@
-"""
-models.py
-- Data classes for the surveyapi application
-"""
-
-from flask.globals import current_app
 from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy.orm import relationship
+from sqlalchemy.schema import ForeignKey
+from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.types import String, Integer
 from werkzeug.security import check_password_hash, generate_password_hash
 
 db = SQLAlchemy()
 
 
-class User(db.Model):
-    __tablename__ = "user"
+class Note(db.Model):
+    __tablename__ = "notes"
 
-    id = db.Column(db.Integer, primary_key=True)
-    email = db.Column(db.String(120), unique=True, nullable=False)
-    password = db.Column(db.String(255), nullable=False)
+    id = db.Column(Integer, primary_key=True)
+    title = db.Column(String(255))
+    content = db.Column(JSONB)
+    owner = db.Column(Integer, ForeignKey("users.id"))
+
+    def __init__(self, title, content, owner):
+        self.title = title
+        self.content = content
+        self.owner = owner
+
+    def to_dict(self):
+        return dict(id=self.id, title=self.title, content=self.content)
+
+
+class User(db.Model):
+    __tablename__ = "users"
+
+    id = db.Column(Integer, primary_key=True)
+    email = db.Column(String(120), unique=True, nullable=False)
+    password = db.Column(String(255), nullable=False)
+    notes = relationship("Note")
 
     def __init__(self, email, password):
         self.email = email
