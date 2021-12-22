@@ -1,9 +1,18 @@
 <template>
   <div class="dashboard">
     <h1>Your files</h1>
-    <v-container fluid>
+    <v-progress-circular
+      :width="10"
+      :size="100"
+      position-y="center"
+      color="green"
+      v-if="loading"
+      class="justify-center align-center align-self-center"
+      indeterminate
+    ></v-progress-circular>
+    <v-container v-if="cards" fluid>
       <v-row dense style="display: flex; flex-wrap: wrap">
-        <v-col v-for="card in cards" :key="card.title" class="col-3">
+        <v-col v-for="(card, i) in cards" :key="i" class="col-3">
           <v-card>
             <v-img
               :src="card.src"
@@ -17,13 +26,28 @@
             <v-card-actions>
               <v-spacer></v-spacer>
 
-              <v-btn icon>
+              <v-btn icon @click="download(card.content)">
                 <v-icon>mdi-download</v-icon>
               </v-btn>
-
-              <v-btn icon>
-                <v-icon>mdi-share-variant</v-icon>
-              </v-btn>
+              <v-dialog v-model="dialog" persistent max-width="900">
+                <template v-slot:activator="{ on, attrs }">
+                  <v-btn icon v-bind="attrs" v-on="on">
+                    <v-icon>mdi-share-variant</v-icon>
+                  </v-btn>
+                </template>
+                <v-card>
+                  <v-card-title class="text-h5"> Share your note with this link! </v-card-title>
+                  <v-card-text>
+                    <a :href="'http://localhost:8080/notes/' + card.share_uuid">
+                      {{ 'http://localhost:8080/notes/' + card.share_uuid }}
+                    </a>
+                  </v-card-text>
+                  <v-card-actions>
+                    <v-spacer></v-spacer>
+                    <v-btn color="green darken-1" @click="dialog = false" text> Close </v-btn>
+                  </v-card-actions>
+                </v-card>
+              </v-dialog>
             </v-card-actions>
           </v-card>
         </v-col>
@@ -34,23 +58,40 @@
 
 <script>
 export default {
-  data: () => ({
-    cards: [
-      {
-        id: 1,
-        title: 'Test_1',
-        src: './2.png',
-      },
-      { id: 2, title: 'Test_2', src: './2.png' },
-      { id: 3, title: 'Test_3', src: './2.png' },
-      { id: 4, title: 'Test_4', src: './2.png' },
-      { id: 5, title: 'Test_5', src: './2.png' },
-      { id: 6, title: 'Test_6', src: './2.png' },
-      { id: 7, title: 'Test_7', src: './2.png' },
-      { id: 8, title: 'Test_8', src: './2.png' },
-      { id: 9, title: 'Test_9', src: './2.png' },
-    ],
-  }),
   name: 'Dashboard',
+  data() {
+    return {
+      cards: null,
+      loading: true,
+      dialog: false,
+    };
+  },
+  methods: {
+    goto(url) {
+      window.open(url);
+    },
+    getNotes() {
+      this.$store.dispatch('getNotes').then((data) => {
+        this.loading = false;
+        this.cards = data;
+      });
+    },
+    download(nodes) {
+      this.$store.dispatch('setCanvasNodes', nodes);
+      this.$router.push('/', this.emitRunAnimation);
+    },
+    emitRunAnimation() {
+      this.$store.dispatch('activateCanvas');
+    },
+  },
+  created() {
+    this.getNotes();
+  },
 };
 </script>
+
+<style scoped>
+.dashboard {
+  width: 100%;
+}
+</style>

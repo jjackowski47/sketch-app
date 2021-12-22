@@ -13,6 +13,7 @@
       <v-btn v-if="!animationCaptured" @click="clearCanvas" large class="green white--text mx-2"
         >Clear</v-btn
       >
+      <TitleDialog v-if="animationCaptured && isAuthenticated" />
       <v-menu bottom offset-y>
         <template v-slot:activator="{ on, attrs }">
           <v-btn
@@ -39,6 +40,8 @@
       :max="nodesLength - 1"
       @input="updateCanvasState"
       :readonly="!animationCaptured"
+      color="green darken-1"
+      track-color="green lighten-3"
     >
       <template v-slot:append>{{ progress }}</template>
     </v-slider>
@@ -47,6 +50,7 @@
 
 <script>
 import { putPointOnCanvas, fillCanvas, initAnimationFrame, downloadFile } from '../utils/index.js';
+import TitleDialog from './TitleDialog.vue';
 
 const initialState = () => {
   return {
@@ -66,7 +70,13 @@ export default {
   data() {
     return initialState();
   },
+  components: {
+    TitleDialog,
+  },
   computed: {
+    isAuthenticated() {
+      return this.$store.getters.isAuthenticated;
+    },
     nodesLength() {
       return this.$store.getters.nodesLength;
     },
@@ -278,6 +288,11 @@ export default {
     this.stream = this.canvas.captureStream(60);
 
     initAnimationFrame();
+
+    if (this.$store.getters.activateCanvas) {
+      this.saveAnimation();
+      this.$store.dispatch('deactivateCanvas');
+    }
   },
 };
 </script>
