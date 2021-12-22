@@ -1,5 +1,6 @@
+from flask_cors.decorator import cross_origin
 import jwt
-from flask import Blueprint, Response, current_app, jsonify, request
+from flask import Blueprint, Response, current_app, jsonify, request, abort
 from pydantic import BaseModel
 from pydantic.networks import EmailStr
 from functools import wraps
@@ -38,6 +39,7 @@ def token_required(f):
 
 
 @notes.route("/notes", methods=["GET"])
+@cross_origin()
 @token_required
 def get_user_notes(current_user: User):
     notes = Note.query.filter_by(owner=current_user.id).all()
@@ -46,6 +48,7 @@ def get_user_notes(current_user: User):
 
 
 @notes.route("/notes", methods=["POST"])
+@cross_origin()
 @token_required
 def upload_note(current_user: User):
     request_data = request.json
@@ -58,10 +61,25 @@ def upload_note(current_user: User):
         return "note content is missing in request body", 400
 
     with session_manager() as session:
-        note = Note(title=title, content=content, owner=current_user.id)
+        note = Note(
+            title=title,
+            content=content,
+            owner=current_user.id,
+        )
         session.add(note)
         session.commit()
+        current_app.logger.info("OK note added")
         if note:
             return jsonify({"note_id": note.id})
         else:
             return Response("An error occurred when adding note", 500)
+
+
+@notes.route("/notes/<uuid>", methods=["GET"])
+@cross_origin()
+def get_note_by_uuid(uuid):
+    with session_manager() as session:
+        note = session.query(Note).filter(Note.share_uuid == uuid).first()
+        if note is None:
+            abort(404)
+        return jsonify(note.content)
