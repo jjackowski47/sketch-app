@@ -80,6 +80,13 @@ export default new Vuex.Store({
     nodesLength(state) {
       return state.canvasNodes.length;
     },
+    userEmail(state) {
+      if (!state.jwt || state.jwt.split('.').length < 3) {
+        return '';
+      }
+      const data = JSON.parse(atob(state.jwt.split('.')[1]));
+      return data.sub;
+    },
   },
   modules: {},
 });

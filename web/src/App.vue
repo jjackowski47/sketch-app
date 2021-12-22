@@ -3,6 +3,9 @@
     <v-navigation-drawer app v-model="drawer" absolute temporary class="d-xl-none">
       <v-list nav dense>
         <v-list-item-group v-model="group" active-class="green--text text--accent-4">
+          <v-avatar v-if="isAuthenticated" size="50" color="green" class="mb-5">
+            <span class="white--text text-h5">{{ userInitials }}</span>
+          </v-avatar>
           <v-list-item v-for="item in navItems" :key="item.id" :to="item.path">
             <v-list-item-icon>
               <v-icon>{{ item.icon }}</v-icon>
@@ -22,7 +25,7 @@
         }}</v-btn>
       </v-item-group>
       <v-avatar v-if="isAuthenticated" size="30" color="green">
-        <span class="white--text text-h7">JJ</span>
+        <span class="white--text text-caption">{{ userInitials }}</span>
       </v-avatar>
     </v-app-bar>
     <v-main>
@@ -42,6 +45,9 @@ export default {
   computed: {
     isAuthenticated() {
       return this.$store.getters.isAuthenticated;
+    },
+    userInitials() {
+      return this.$store.getters.userEmail.slice(0, 2).toUpperCase();
     },
     navItems() {
       return !this.isAuthenticated
