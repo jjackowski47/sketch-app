@@ -48,12 +48,13 @@ def signin_user():
             e.json(),
             400,
         )
-    user: User = User.authenticate(
-        email=request_data.email, password=request_data.password
-    )
+    with session_manager():
+        user: User = User.authenticate(
+            email=request_data.email, password=request_data.password
+        )
 
-    if not user:
-        return Response("Invalid credentials", 401)
+        if not user:
+            return Response("Invalid credentials", 401)
 
     token = jwt.encode(
         {
@@ -70,20 +71,21 @@ def signin_user():
 
 
 @auth.route("/signup", methods=["POST"])
+@cross_origin(supports_credentials=True)
 def signup_user():
     try:
         request_data = CreateUserRequest(**request.json)
     except ValidationError as e:
         current_app.logger.error(e)
         return Response(
-            {"errors": e.errors},
+            e.json(),
             400,
         )
 
-    if User.query.filter_by(email=request_data.email).first():
-        return Response("User with given email already exists", 400)
-
     with session_manager() as session:
+        if User.query.filter_by(email=request_data.email).first():
+            return Response("User with given email already exists", 400)
+
         user = User(request_data.email, request_data.password)
         session.add(user)
         session.commit()
