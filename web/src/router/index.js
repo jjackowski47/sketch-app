@@ -5,6 +5,7 @@ import About from '../views/About.vue';
 import Signup from '../views/Signup.vue';
 import Signin from '../views/Signin.vue';
 import Dashboard from '../views/Dashboard.vue';
+import Note from '../components/Note.vue';
 import store from '../store/index.js';
 
 Vue.use(VueRouter);
@@ -43,6 +44,9 @@ const routes = [
         next('/');
       }
     },
+    meta: {
+      requiresAuth: true,
+    },
   },
   {
     path: '/signin',
@@ -65,6 +69,11 @@ const routes = [
       }
       next('/');
     },
+  },
+  {
+    path: '/notes/:uuid',
+    component: Note,
+    props: true,
   },
 ];
 

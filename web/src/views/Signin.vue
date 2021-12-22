@@ -15,6 +15,14 @@
           <label for="password" class="placeholder">password</label>
         </div>
         <input color="primary" class="submit" type="submit" value="Sign in" />
+        <v-progress-circular
+          :width="5"
+          :size="50"
+          color="blue"
+          class="mt-8"
+          v-if="loading"
+          indeterminate
+        ></v-progress-circular>
       </div>
     </form>
     <v-img
@@ -24,9 +32,8 @@
       alt="Teacher with a blackboard"
       class="d-none d-md-flex ml-12"
     ></v-img>
-    <v-snackbar v-model="snackbar" :color="color" timeout="3000" style="white-space: pre-line">
+    <v-snackbar v-model="snackbar" :color="color" timeout="4000" style="white-space: pre-line">
       {{ text }}
-
       <template v-slot:action="{ attrs }">
         <v-btn :color="btnColor" text v-bind="attrs" @click="snackbar = false"> Close </v-btn>
       </template>
@@ -170,45 +177,35 @@ export default {
       text: '',
       color: 'white',
       btnColor: 'white',
+      loading: false,
     };
-  },
-  mounted() {
-    this.$on('failedRegistering', (msg) => {
-      this.errorMsg = msg;
-    });
-    this.$on('failedAuthentication', (msg) => {
-      this.errorMsg = msg;
-    });
-  },
-  beforeDestroy() {
-    this.$off('failedRegistering');
-    this.$off('failedAuthentication');
   },
   methods: {
     authenticate() {
+      this.loading = true;
       this.$store
         .dispatch('login', { email: this.email, password: this.password })
         .then(() => {
           this.$router.push('/');
         })
         .catch((error) => {
-          if (error.response.status === 400) {
-            console.log(error.response.data[0].msg);
-            this.text = error.response.data.map((x) => x.loc[0] + ' ' + x.msg).join('\n');
-          } else if (error.response.status === 401) {
-            this.text = error.response.data;
+          if (!error.response) {
+            this.text = 'Connection error';
           } else {
-            this.text = 'Unknown error';
+            if (error.response.status === 400) {
+              this.text = error.response.data.map((e) => e.loc[0] + ' ' + e.msg).join('\n');
+            } else if (error.response.status === 401) {
+              this.text = error.response.data;
+            } else {
+              this.text = 'Unknown error';
+              throw error;
+            }
           }
           this.color = 'error';
           this.btnColor = 'red lighten-5';
           this.snackbar = true;
+          this.loading = false;
         });
-    },
-    register() {
-      this.$store
-        .dispatch('register', { email: this.email, password: this.password })
-        .then(() => this.$router.push('/'));
     },
   },
 };
